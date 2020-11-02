@@ -1,0 +1,11 @@
+{
+  "name": "zenn",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:Hagihara-A/zenn.git",
+  "author": "Arark <knkr5456@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "zenn-cli": "^0.1.52"
+  }
+}
