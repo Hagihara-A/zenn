@@ -41,7 +41,7 @@ yarn tsc --init
 }
 ```
 
-見てのとおりes6にコンパイルする。nodejsでは6あたりから?、es6の機能が使えるようになったぽいので心配ない。ブラウザでもIE以外は対応してるし、そもそもバンドルするので問題ない。...とおもう。
+es6にコンパイルする。nodejsでは6あたりから?、es6の機能が使えるようになったぽいので心配ない。ブラウザでもIE以外は対応してるし、そもそもバンドルするので問題ない。...とおもう。
 
 ## パッケージの中身を作成
 ```typescript:src/index.ts
@@ -84,7 +84,7 @@ build/
 まずpackage.json。最低でもこれは欲しい。
 ```json:package.json
 {
-  "main": "./build/index.js", // packageのエントリーポイントを指定
+  "main": "./build/index.js", // JSのエントリーポイント
   "types": "./build/index.d.ts", // TSのエントリーポイント
   "publishConfig": {
     "access": "public" // デフォルトはrestricted。無料アカウントならpublicが必須。
@@ -118,7 +118,6 @@ npm notice 107B  src/module.ts
 ```ignore:.npmignore
 src
 *config.*
-*.tgz
 ```
 
 これを作ってもう一度`npm publish --dry-run`をする。
@@ -143,7 +142,7 @@ yarn init -y
 yarn link $YOUR_PACKAGE_NAME
 ```
 
-`package-test/node_module`をみると、作ったパッケージにシンボリックリンクが貼られているのがわかる。だから次のように簡単にモジュールの動作確認ができる。package.jsonに`"type":"module"`を忘れないように。
+`package-test/node_modules`をみると、作ったパッケージへシンボリックリンクが貼られているのがわかる。だから次のように簡単にモジュールの動作確認ができる。package.jsonに`"type":"module"`を忘れないように。
 
 ```js
 import { IamExported, IamIndex } from "$YOUR_PACKAGE_NAME"
@@ -158,7 +157,9 @@ yarn login
 yarn publish
 ```
 
-ここは良い感じにやって（飽きた）。package.jsonにこう書いておくとpublishとかの前にビルドしてくれる。
+ここは良い感じにやって（飽きた）。
+
+package.jsonにこう書いておくとpublishとかの前にビルドしてくれる。
 ```json
 "scripts": {
   "prepare": "tsc"
@@ -193,7 +194,7 @@ echo 'module.exports = { presets: [["@babel/preset-env", { targets: { node: "cur
 
 でbabelを設定する。わざわざ.cjsにしたのは、configだけCommonJSを使いたいから。.jsではpackage.jsonの`"type": "module"`からESMと解釈されるのでだめ。
 
-これでjestは動くはず。
+これでjestが動くはず。
 ```bash
 $ yarn test
 yarn run v1.22.5
