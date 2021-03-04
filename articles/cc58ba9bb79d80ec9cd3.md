@@ -3,9 +3,9 @@ title: "Typescript+ESMでnpmパッケージ開発した備忘録"
 emoji: "🗽"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["typescript", "npm"]
-published: false
+published: true
 ---
-Typescript+ESMでnpmパッケージを作る方法が案外まとまってなかったので残しておく。マサカリ歓迎。jestでテストもやってる。基本yarnを使う。
+Typescript+ESMでnpmパッケージを作る方法が案外まとまってなかったので残しておく。マサカリ歓迎。ほぼ確実に間違い/非効率な点がある。jestでテストもやってる。基本yarnを使う。
 
 モジュール化するときにCommonJS(requireのやつ)とESM(import/exportのやつ)とかがある。調べたところESMが業界標準で、nodejs>13.2.0とか __モダンな__ ブラウザではすでに対応してるらしいので、ESMで行く。Tree Shakeがしやすかったりするらしい。
 
@@ -45,19 +45,126 @@ yarn tsc --init
 
 ## パッケージの中身を作成
 ```typescript:src/index.ts
-export { IamExported } from "./module";
+export { IamExported } from "./module.js";
 export const IamIndex = () => {
-  console.log("I am index.ts");
+  console.log("I am exported in index.ts");
 };
 ```
 
 ```typescript:src/module.ts
 export const IamExported = (name: string) => {
-  console.log(`Hello, ${name}!! I am exported in module.ts!`);
+  return `Hello, ${name}!! I am exported in module.ts!`;
 };
 ```
+index.tsに注意してほしい。`from "./module.js"`のように.jsを付けている。これは間違いではない。
 
-## jestの導入
+:::details .jsの理由
+`import {hoge} from "./module"`をTypescriptがコンパイルすると、手を加えずにそのまま出力される。しかしこれは正しいESMの記法ではない（多分）。本来のESMは拡張子が必要で、理想的にはTSに`import {hoge} from "./module.js"`とコンパイルしてほしい。しかしこれを実現するCompilerOptionを見つけられなかったので次善の策として.jsを付けている。.jsを付けても以前と同じように動くようだ。以下参照
+
+https://fettblog.eu/typescript-and-es-modules/
+:::
+
+ここまできたら`yarn tsc`すると、`build/`にコンパイルされた.jsと.d.tsが出てくる。以下のような構成になるはず。
+```
+src/
+  - index.ts
+  - module.ts
+  - module.test.ts
+
+build/
+  - index.js
+  - index.d.ts
+  - module.ts
+  - module.d.ts
+```
+
+## publishの準備
+以上でモジュール開発は終わりだが、npmにpublishするために追加で設定することがある。
+
+まずpackage.json。最低でもこれは欲しい。
+```json:package.json
+{
+  "main": "./build/index.js", // packageのエントリーポイントを指定
+  "types": "./build/index.d.ts", // TSのエントリーポイント
+  "publishConfig": {
+    "access": "public" // デフォルトはrestricted。無料アカウントならpublicが必須。
+  },
+  "type": "module" // ESMを使う（再掲）
+}
+```
+ほかにはlicense、repositoryとかkeywordsも指定したほうが良い。以下参照。
+
+https://docs.npmjs.com/cli/v7/configuring-npm/package-json
+https://www.typescriptlang.org/docs/handbook/declaration-files/publishing.html
+
+ここで`npm publish --dry-run`を実行すると、パッケージの概要が見れる。Tarball Contentsにはパッケージに同梱されるファイルが一覧で出てくる（多分）。
+```
+npm notice === Tarball Contents === 
+npm notice 133B  babel.config.cjs 　
+npm notice 122B  build/index.js    
+npm notice 101B  build/module.js   
+npm notice 503B  package.json      
+npm notice 900B  tsconfig.json     
+npm notice 6.5kB jest.config.mjs   
+npm notice 83B   build/index.d.ts  
+npm notice 119B  src/index.ts      
+npm notice 60B   build/module.d.ts 
+npm notice 149B  src/module.test.ts
+npm notice 107B  src/module.ts      
+```
+
+見てのとおり、babel.config.cjsやjest.config.mjs, src/以下のファイルは同梱しても意味ないので省きたい。そういう時は`.npmignore`を使う。
+
+```ignore:.npmignore
+src
+*config.*
+*.tgz
+```
+
+これを作ってもう一度`npm publish --dry-run`をする。
+```
+npm notice === Tarball Contents === 
+npm notice 122B build/index.js   
+npm notice 101B build/module.js  
+npm notice 503B package.json     
+npm notice 83B  build/index.d.ts 
+npm notice 60B  build/module.d.ts
+```
+
+必要なファイルだけ同梱していることがわかる。
+
+## 動作確認
+パッケージのルートで`yarn link`をする。`success!!`とでなかったら何かおかしい。別のディレクトリで動作確認をする。
+
+```bash
+cd ..
+mkdir package-test && cd package-test
+yarn init -y
+yarn link $YOUR_PACKAGE_NAME
+```
+
+`package-test/node_module`をみると、作ったパッケージにシンボリックリンクが貼られているのがわかる。だから次のように簡単にモジュールの動作確認ができる。package.jsonに`"type":"module"`を忘れないように。
+
+```js
+import { IamExported, IamIndex } from "$YOUR_PACKAGE_NAME"
+console.log(IamExported("arark")); // Hello, arark!! I am exported in module.ts!
+IamIndex(); // I am exported in index.ts
+```
+## npmへpublish
+npmのアカウントを作る。メール認証しないとpublishが403ではじかれるので注意。
+
+```bash
+yarn login
+yarn publish
+```
+
+ここは良い感じにやって（飽きた）。package.jsonにこう書いておくとpublishとかの前にビルドしてくれる。
+```json
+"scripts": {
+  "prepare": "tsc"
+ },
+```
+## （付録）jestの導入
 
 テストスクリプトを書く。
 ```typescript:src/module.test.ts
@@ -101,9 +208,3 @@ Time:        0.8 s
 Ran all test suites.
 Done in 1.35s.
 ```
-
-これでjestは終わり。
-
-
-## package.jsonを整える
-ここまできたら`yarn tsc`すると、`build/`にコンパイルされた.jsと.d.tsが出てくる。`module.test.js`と`module.test.d.ts`も出力されてたらそれは間違い。おそらくtsconfigのexcludeが違ってる。
