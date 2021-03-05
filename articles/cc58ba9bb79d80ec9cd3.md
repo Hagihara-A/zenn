@@ -113,7 +113,7 @@ npm notice 149B  src/module.test.ts
 npm notice 107B  src/module.ts      
 ```
 
-見てのとおり、babel.config.cjsやjest.config.mjs, src/以下のファイルは同梱しても意味ないので省きたい。そういう時は`.npmignore`を使う。
+babel.config.cjsやjest.config.mjs, src/以下のファイルは同梱しても意味ないので省きたい。そういう時は`.npmignore`を使う。
 
 ```ignore:.npmignore
 src
@@ -133,12 +133,13 @@ npm notice 60B  build/module.d.ts
 必要なファイルだけ同梱していることがわかる。
 
 ## 動作確認
-パッケージのルートで`yarn link`をする。`success!!`とでなかったら何かおかしい。別のディレクトリで動作確認をする。
+`yarn link`を使うとローカルでテストできる。パッケージとは別のディレクトリで動作確認をする。
 
 ```bash
+yarn link
 cd ..
 mkdir package-test && cd package-test
-yarn init -y
+yarn init -y　# "type": "module"を追加しておく
 yarn link $YOUR_PACKAGE_NAME
 ```
 
