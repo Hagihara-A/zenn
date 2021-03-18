@@ -22,26 +22,10 @@ ESMはpackage.jsonに `"type": "module"`を指定しないといけないので�
 ## Typescriptの導入
 ```bash
 yarn add -D typescript
-yarn tsc --init
+yarn tsc --init --target es6 --module esnext --declaration true --outDir ./build --rootDir ./src
 ```
 
-`tsconfig.json`はお好みだけど、ここら辺は指定しておくと良い。
-```json
-{
-  "compilerOptions": {
-    "target": "es6", // いい加減es6でよさそう
-    "module": "esnext" ,　// ESMを使えるようにする。es2020でも可
-    "declaration": true ,　//.d.tsを出力する
-    "outDir": "./build" ,
-    "rootDir": "./src" /,
-    "esModuleInterop": true , // CJSとESMの相互運用を良い感じにしてくれるらしい
-  },
-  "exclude": ["**/*.test.*"],　// testはコンパイルしない
-  "include": ["./src/**.*"] // ここにコードを置こう
-}
-```
-
-es6にコンパイルする。nodejsでは6あたりから?、es6の機能が使えるようになったぽいので心配ない。ブラウザでもIE以外は対応してるし、そもそもバンドルするので問題ない。...とおもう。
+オプションを少し解説する。`--module esnext`でESMにコンパイルするよう指定してる。`--declaration true`で`.d.ts`を生成。`--target es6`でes6にコンパイルする。nodejsでは6あたりから?、es6の機能が使えるようになったぽいので心配ない。ブラウザでもIE以外は対応してるし、そもそもバンドルするので問題ない。...とおもう。
 
 ## パッケージの中身を作成
 ```typescript:src/index.ts
@@ -59,9 +43,9 @@ export const IamExported = (name: string) => {
 index.tsに注意してほしい。`from "./module.js"`のように.jsを付けている。これは間違いではない。
 
 :::details .jsの理由
-`import {hoge} from "./module"`をTypescriptがコンパイルすると、手を加えずにそのまま出力される。しかしこれは正しいESMの記法ではない（多分）。本来のESMは拡張子が必要で、理想的にはTSに`import {hoge} from "./module.js"`とコンパイルしてほしい。しかしこれを実現するCompilerOptionを見つけられなかったので次善の策として.jsを付けている。.jsを付けても以前と同じように動くようだ。以下参照
+`import {hoge} from "./module"`をTypescriptがコンパイルすると、手を加えずにそのまま出力される。しかしこれは正しいESMの記法ではない。本来のESMは拡張子が必要で、理想的にはTSに`import {hoge} from "./module.js"`とコンパイルしてほしい。しかしこれを実現するCompilerOptionはないので次善の策として.jsを付けている。.jsを付けても同じように動くようだ。以下参照
 
-https://fettblog.eu/typescript-and-es-modules/
+https://github.com/microsoft/TypeScript/issues/33588
 :::
 
 ここまできたら`yarn tsc`すると、`build/`にコンパイルされた.jsと.d.tsが出てくる。以下のような構成になるはず。
@@ -113,7 +97,9 @@ npm notice 149B  src/module.test.ts
 npm notice 107B  src/module.ts      
 ```
 
-babel.config.cjsやjest.config.mjs, src/以下のファイルは同梱しても意味ないので省きたい。そういう時は`.npmignore`を使う。
+babel.config.cjsやjest.config.mjs, src/以下のファイルは同梱しても意味ないので省きたい。そういう時は`.npmignore`を使う[^1]。
+
+[^1]: もしくは、package.jsonの`files`で指定することもできる。https://docs.npmjs.com/cli/v7/configuring-npm/package-json#files
 
 ```ignore:.npmignore
 src
