@@ -4,7 +4,7 @@ emoji: "📦"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["npm", "haskell"]
 published: true
-published_at: 2023-12-4 09:00
+published_at: 2023-12-04 09:00
 ---
 
 この記事ではSemVerとnode-semverの違いや、HaskellのパーサジェネレータであるHappyとAlexの使用方法について紹介します。
