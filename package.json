@@ -6,6 +6,7 @@
   "author": "Arark <knkr5456@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "prettier": "^3.4.2",
     "zenn-cli": "^0.1.158"
   }
 }
